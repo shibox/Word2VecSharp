@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -15,19 +16,12 @@ namespace Word2VecConsole
         static void Main(string[] args)
         {
             //进行分词训练
-
             Learn lean = new Learn();
-
             lean.learnFile(sportCorpusFile);
-
             lean.saveModel("D:\\weiwei\\OSS\\vector.mod");
 
-
-
             //加载测试
-
             Word2Vec w2v = new Word2Vec();
-
             w2v.loadJavaModel("D:\\weiwei\\OSS\\vector.mod");
             Console.WriteLine(w2v.distance("执行"));
         }
@@ -35,45 +29,29 @@ namespace Word2VecConsole
         public static void Word2VecTest(String[] args)
         {
 
-            // Learn learn = new Learn();
-            // learn.learnFile(new File("library/xh.txt"));
-            // learn.saveModel(new File("library/javaSkip1"));
+            //Learn learn = new Learn();
+            //learn.learnFile("library/xh.txt");
+            //learn.saveModel("library/javaSkip1");
 
-            Word2Vec vec = new Word2Vec();
-            vec.loadJavaModel("library/javaSkip1");
-
-            // System.out.println("中国" + "\t" +
-            // Arrays.toString(vec.getWordVector("中国")));
-            // ;
-            // System.out.println("毛泽东" + "\t" +
-            // Arrays.toString(vec.getWordVector("毛泽东")));
-            // ;
-            // System.out.println("足球" + "\t" +
-            // Arrays.toString(vec.getWordVector("足球")));
-
-            // Word2VEC vec2 = new Word2VEC();
-            // vec2.loadGoogleModel("library/vectors.bin") ;
-            //
-            //
-
+            //Word2Vec vec = new Word2Vec();
+            //vec.loadJavaModel("library/javaSkip1");
+            //Console.WriteLine("中国" + "\t" + JsonConvert.SerializeObject(vec.getWordVector("中国")));
+            //Console.WriteLine("毛泽东" + "\t" +JsonConvert.SerializeObject(vec.getWordVector("毛泽东")));
+            //Console.WriteLine("足球" + "\t" +JsonConvert.SerializeObject(vec.getWordVector("足球")));
+            //Word2Vec vec2 = new Word2Vec();
+            //vec2.loadGoogleModel("library/vectors.bin");
 
             //String str = "毛泽东";
-            //      long start = System.currentTimeMillis();
-            //for (int i = 0; i< 100; i++) {
-            //	System.out.println(vec.distance(str));
-            //	;
+            //for (int i = 0; i < 100; i++)
+            //{
+            //    Console.WriteLine(vec.distance(str));
             //}
-            //  System.out.println(System.currentTimeMillis() - start);
-
-            //System.out.println(System.currentTimeMillis() - start);
+            //Console.WriteLine(vec2.distance(str));
 
 
-            // System.out.println(vec2.distance(str));
-            //
-            //
-            // //男人 国王 女人
-            // System.out.println(vec.analogy("邓小平", "毛泽东思想", "毛泽东"));
-            // System.out.println(vec2.analogy("毛泽东", "毛泽东思想", "邓小平"));
+            //男人 国王 女人
+            //Console.WriteLine(vec.analogy("邓小平", "毛泽东思想", "毛泽东"));
+            //Console.WriteLine(vec2.analogy("毛泽东", "毛泽东思想", "邓小平"));
         }
 
         public static void WordKmeansTest(String[] args)
