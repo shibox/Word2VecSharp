@@ -4,15 +4,17 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{F7CA6C87-62A4-460E-8977-244200CA2590}</ProjectGuid>
-    <OutputType>Library</OutputType>
+    <ProjectGuid>{664B0DDA-D20D-4711-87C5-6D0F11357915}</ProjectGuid>
+    <OutputType>Exe</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Word2VecSharp</RootNamespace>
-    <AssemblyName>Word2VecSharp</AssemblyName>
+    <RootNamespace>Word2VecConsole</RootNamespace>
+    <AssemblyName>Word2VecConsole</AssemblyName>
     <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -22,6 +24,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -40,16 +43,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Haffman.cs" />
-    <Compile Include="HiddenNeuron.cs" />
-    <Compile Include="Learn.cs" />
-    <Compile Include="MapCount.cs" />
-    <Compile Include="Neuron.cs" />
+    <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Word2Vec.cs" />
-    <Compile Include="WordEntry.cs" />
-    <Compile Include="WordKmeans.cs" />
-    <Compile Include="WordNeuron.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Word2VecSharp\Word2VecSharp.csproj">
+      <Project>{f7ca6c87-62a4-460e-8977-244200ca2590}</Project>
+      <Name>Word2VecSharp</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
