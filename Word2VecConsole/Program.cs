@@ -11,13 +11,15 @@ namespace Word2VecConsole
 {
     class Program
     {
-        private static string sportCorpusFile = "D:\\weiwei\\OSS\\result.txt";
+        private static string file = "D:\\weiwei\\OSS\\result.txt";
+
 
         static void Main(string[] args)
         {
+
             //进行分词训练
             Learn lean = new Learn();
-            lean.learnFile(sportCorpusFile);
+            lean.learnFile(file);
             lean.saveModel("D:\\weiwei\\OSS\\vector.mod");
 
             //加载测试

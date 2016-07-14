@@ -1,4 +1,5 @@
-﻿using System;
+﻿using DataStructures.RedBlackTreeSpace;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,7 +20,8 @@ namespace Word2VecSharp
             this.layerSize = layerSize;
         }
 
-        private SortedSet<Neuron> set = new SortedSet<Neuron>();
+        //private SortedSet<Neuron> set = new SortedSet<Neuron>();
+        RedBlackTree<Neuron, bool> set = new RedBlackTree<Neuron, bool>(null);
 
         public void make(IEnumerable<Neuron> neurons)
         {

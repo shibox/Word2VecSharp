@@ -40,12 +40,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Collections\AbstractSet.cs" />
+    <Compile Include="Collections\TreeSet.cs" />
     <Compile Include="Haffman.cs" />
     <Compile Include="HiddenNeuron.cs" />
     <Compile Include="Learn.cs" />
     <Compile Include="MapCount.cs" />
     <Compile Include="Neuron.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RedBlackTree\Node.cs" />
+    <Compile Include="RedBlackTree\NodeType.cs" />
+    <Compile Include="RedBlackTree\NullNode.cs" />
+    <Compile Include="RedBlackTree\RedBlackTree.cs" />
     <Compile Include="Word2Vec.cs" />
     <Compile Include="WordEntry.cs" />
     <Compile Include="WordKmeans.cs" />
