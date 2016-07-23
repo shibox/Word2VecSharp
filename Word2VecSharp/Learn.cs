@@ -10,60 +10,49 @@ namespace Word2VecSharp
 {
     public class Learn
     {
+        #region 私有
 
+        public const int EXP_TABLE_SIZE = 1000;
         private Dictionary<String, WordNeuron> wordMap = new Dictionary<string, WordNeuron>();
+        private double[] expTable = new double[EXP_TABLE_SIZE];
+        private double[] neu1e = null;
+        private int trainWordsCount = 0;
+        private int MAX_EXP = 6;
+
+        #endregion
+
+        #region 公共
+
         /// <summary>
         /// 训练多少个特征
         /// </summary>
-        private int layerSize = 200;
-
+        public int layerSize = 200;
         /// <summary>
         /// 上下文窗口大小
         /// </summary>
-        private int window = 5;
+        public int window = 5;
+        public double sample = 1e-3;
+        public double alpha = 0.025;
+        public double startingAlpha = 0.025;
+        public bool isCbow = false;
 
-        private double sample = 1e-3;
-        private double alpha = 0.025;
-        private double startingAlpha = 0.025;
+        #endregion
 
-        public const int EXP_TABLE_SIZE = 1000;
-
-        private Boolean isCbow = false;
-
-        private double[] expTable = new double[EXP_TABLE_SIZE];
-
-        private int trainWordsCount = 0;
-
-        private int MAX_EXP = 6;
-
-        public Learn(Boolean isCbow, int layerSize, int window, Double alpha,
-            Double sample)
+        public Learn(bool isCbow, int layerSize, int window, double alpha, double sample)
         {
-            createExpTable();
+            CreateExpTable();
             this.isCbow = isCbow;
             this.layerSize = layerSize;
             this.window = window;
             this.alpha = alpha;
             this.sample = sample;
-
-
-            //if (isCbow != null)
-            //{
-            //    this.isCbow = isCbow;
-            //}
-            //if (layerSize != null)
-            //    this.layerSize = layerSize;
-            //if (window != null)
-            //    this.window = window;
-            //if (alpha != null)
-            //    this.alpha = alpha;
-            //if (sample != null)
-            //    this.sample = sample;
+            this.neu1e = new double[layerSize];// 误差项
         }
 
         public Learn()
         {
-            createExpTable();
+            CreateExpTable();
+            neu1e = new double[layerSize];// 误差项
         }
 
         /// <summary>
@@ -72,6 +61,7 @@ namespace Word2VecSharp
         /// <param name="file"></param>
         private void trainModel(string file)
         {
+            #region old
             //    try (BufferedReader br = new BufferedReader(new InputStreamReader(
             //        new FileInputStream(file)))) {
             //      String temp = null;
@@ -79,18 +69,18 @@ namespace Word2VecSharp
             //        int wordCount = 0;
             //        int lastWordCount = 0;
             //        int wordCountActual = 0;
-            //      while ((temp = br.readLine()) != null) {
-            //        if (wordCount - lastWordCount > 10000) {
-            //          System.out.println("alpha:" + alpha + "\tProgress: "
-            //              + (int) (wordCountActual / (double) (trainWordsCount + 1) * 100)
-            //              + "%");
-            //          wordCountActual += wordCount - lastWordCount;
-            //          lastWordCount = wordCount;
-            //          alpha = startingAlpha
-            //              * (1 - wordCountActual / (double) (trainWordsCount + 1));
-            //          if (alpha<startingAlpha* 0.0001) {
-            //            alpha = startingAlpha* 0.0001;
-            //          }
+            //while ((temp = br.readLine()) != null) {
+            //  if (wordCount - lastWordCount > 10000) {
+            //    System.out.println("alpha:" + alpha + "\tProgress: "
+            //        + (int) (wordCountActual / (double) (trainWordsCount + 1) * 100)
+            //        + "%");
+            //    wordCountActual += wordCount - lastWordCount;
+            //    lastWordCount = wordCount;
+            //    alpha = startingAlpha
+            //        * (1 - wordCountActual / (double) (trainWordsCount + 1));
+            //    if (alpha<startingAlpha* 0.0001) {
+            //      alpha = startingAlpha* 0.0001;
+            //    }
             //}
             //String[] strs = temp.split(" ");
             //wordCount += strs.length;
@@ -127,12 +117,11 @@ namespace Word2VecSharp
             //      System.out.println("Words in train file: " + trainWordsCount);
             //System.out.println("sucess train over!");
             //    }
-
-
+            #endregion
 
             StreamReader br = new StreamReader(file);
-            String temp = null;
-            long nextRandom = 5;
+            string temp = null;
+            long rd = 5;
             int wordCount = 0;
             int lastWordCount = 0;
             int wordCountActual = 0;
@@ -152,7 +141,7 @@ namespace Word2VecSharp
                         alpha = startingAlpha * 0.0001;
                     }
                 }
-                String[] strs = temp.Split(' ');
+                string[] strs = temp.Split(' ');
                 wordCount += strs.Length;
                 List<WordNeuron> sentence = new List<WordNeuron>();
                 for (int i = 0; i < strs.Length; i++)
@@ -166,10 +155,9 @@ namespace Word2VecSharp
                     // ranking same
                     if (sample > 0)
                     {
-                        double ran = (Math.Sqrt(entry.freq / (sample * trainWordsCount)) + 1)
-                            * (sample * trainWordsCount) / entry.freq;
-                        nextRandom = nextRandom * 25214903917L + 11;
-                        if (ran < (nextRandom & 0xFFFF) / (double)65536)
+                        double ran = (Math.Sqrt(entry.freq / (sample * trainWordsCount)) + 1) * (sample * trainWordsCount) / entry.freq;
+                        rd = rd * 25214903917L + 11;
+                        if (ran < (rd & 0xFFFF) / (double)65536)
                         {
                             continue;
                         }
@@ -179,14 +167,14 @@ namespace Word2VecSharp
 
                 for (int index = 0; index < sentence.Count; index++)
                 {
-                    nextRandom = nextRandom * 25214903917L + 11;
+                    rd = rd * 25214903917L + 11;
                     if (isCbow)
                     {
-                        cbowGram(index, sentence, (int)nextRandom % window);
+                        CbowGram(index, sentence, (int)rd % window);
                     }
                     else
                     {
-                        skipGram(index, sentence, (int)nextRandom % window);
+                        SkipGram(index, sentence, (int)rd % window);
                     }
                 }
 
@@ -196,33 +184,24 @@ namespace Word2VecSharp
             Console.WriteLine("sucess train over!");
         }
 
-
-
         /// <summary>
         /// 模型训练
         /// </summary>
         /// <param name="index"></param>
         /// <param name="sentence"></param>
         /// <param name="b"></param>
-        private void skipGram(int index, List<WordNeuron> sentence, int b)
+        private void SkipGram(int index, List<WordNeuron> sentence, int b)
         {
-            // TODO Auto-generated method stub
             WordNeuron word = sentence[index];
             int a, c = 0;
             for (a = b; a < window * 2 + 1 - b; a++)
             {
                 if (a == window)
-                {
                     continue;
-                }
                 c = index - window + a;
                 if (c < 0 || c >= sentence.Count)
-                {
                     continue;
-                }
-
-                double[] neu1e = new double[layerSize];// 误差项
-                                                       // HIERARCHICAL SOFTMAX
+                // HIERARCHICAL SOFTMAX
                 List<Neuron> neurons = word.neurons;
                 WordNeuron we = sentence[c];
                 for (int i = 0; i < neurons.Count; i++)
@@ -272,17 +251,17 @@ namespace Word2VecSharp
         /// <param name="index"></param>
         /// <param name="sentence"></param>
         /// <param name="b"></param>
-        private void cbowGram(int index, List<WordNeuron> sentence, int b)
+        private void CbowGram(int index, List<WordNeuron> sentence, int b)
         {
             WordNeuron word = sentence[index];
             int a, c = 0;
-
             List<Neuron> neurons = word.neurons;
             double[] neu1e = new double[layerSize];// 误差项
             double[] neu1 = new double[layerSize];// 误差项
             WordNeuron last_word;
 
             for (a = b; a < window * 2 + 1 - b; a++)
+            {
                 if (a != window)
                 {
                     c = index - window + a;
@@ -296,7 +275,8 @@ namespace Word2VecSharp
                     for (c = 0; c < layerSize; c++)
                         neu1[c] += last_word.syn0[c];
                 }
-
+            }
+                
             // HIERARCHICAL SOFTMAX
             for (int d = 0; d < neurons.Count; d++)
             {
@@ -351,38 +331,24 @@ namespace Word2VecSharp
         /// <param name="file"></param>
         private void readVocab(string file)
         {
-            //    MapCount<String> mc = new MapCount<>();
-            //    try (BufferedReader br = new BufferedReader(new InputStreamReader(
-            //        new FileInputStream(file)))) {
-            //      String temp = null;
-            //      while ((temp = br.readLine()) != null) {
-            //        String[] split = temp.split(" ");
-            //trainWordsCount += split.length;
-            //        for (String string : split) {
-            //          mc.add(string);
-            //        }
-            //      }
-            //    }
-            //    for (Entry<String, Integer> element : mc.get().entrySet()) {
-            //      wordMap.put(element.getKey(), new WordNeuron(element.getKey(),
-            //          (double) element.getValue() / mc.size(), layerSize));
-            //    }
-
-            MapCount<String> mc = new MapCount<string>();
+            Dictionary<string, int> wc = new Dictionary<string, int>();
             StreamReader br = new StreamReader(file);
-            String temp = null;
+            string temp = null;
             while ((temp = br.ReadLine()) != null)
             {
-                String[] split = temp.Split(' ');
+                string[] split = temp.Split(' ');
                 trainWordsCount += split.Length;
-                foreach (String s in split)
+                foreach (string s in split)
                 {
-                    mc.add(s);
+                    if (wc.ContainsKey(s))
+                        wc[s]++;
+                    else
+                        wc.Add(s, 1);
                 }
             }
-            foreach (KeyValuePair<String, int> element in mc.hm)
+            foreach (KeyValuePair<string, int> item in wc)
             {
-                wordMap.Add(element.Key, new WordNeuron(element.Key,(double)element.Value / mc.size(), layerSize));
+                wordMap.Add(item.Key, new WordNeuron(item.Key,(double)item.Value / wc.Count, layerSize));
             }
         }
 
@@ -390,86 +356,47 @@ namespace Word2VecSharp
         /// 对文本进行预分类
         /// </summary>
         /// <param name="files"></param>
-        private void readVocabWithSupervised(string[] files)
+        private void ReadVocabWithSupervised(string[] files)
         {
-            //for (int category = 0; category < files.length; category++) {
-            //    // 对多个文件学习
-            //    MapCount<String> mc = new MapCount<>();
-            //    try (BufferedReader br = new BufferedReader(new InputStreamReader(
-            //        new FileInputStream(files[category])))) {
-            //        String temp = null;
-            //        while ((temp = br.readLine()) != null)
-            //        {
-            //            String[] split = temp.split(" ");
-            //            trainWordsCount += split.length;
-            //            for (String string : split)
-            //            {
-            //                mc.add(string);
-            //            }
-            //        }
-            //    }
-            //    for (Entry<String, Integer> element : mc.get().entrySet())
-            //    {
-            //        double tarFreq = (double)element.getValue() / mc.size();
-            //        if (wordMap.get(element.getKey()) != null)
-            //        {
-            //            double srcFreq = wordMap.get(element.getKey()).freq;
-            //            if (srcFreq >= tarFreq)
-            //            {
-            //                continue;
-            //            }
-            //            else
-            //            {
-            //                Neuron wordNeuron = wordMap.get(element.getKey());
-            //                wordNeuron.category = category;
-            //                wordNeuron.freq = tarFreq;
-            //            }
-            //        }
-            //        else
-            //        {
-            //            wordMap.put(element.getKey(), new WordNeuron(element.getKey(),
-            //                tarFreq, category, layerSize));
-            //        }
-            //    }
-            //    }
-
-
             for (int category = 0; category < files.Length; category++)
             {
                 // 对多个文件学习
-                MapCount<String> mc = new MapCount<string>();
-                StreamReader br = new StreamReader(files[category]);
-                String temp = null;
-                while ((temp = br.ReadLine()) != null)
+                Dictionary<string, int> wc = new Dictionary<string, int>();
+                StreamReader reader = new StreamReader(files[category]);
+                string temp = null;
+                while ((temp = reader.ReadLine()) != null)
                 {
-                    String[] split = temp.Split(' ');
+                    string[] split = temp.Split(' ');
                     trainWordsCount += split.Length;
-                    foreach (String s in split)
+                    foreach (string s in split)
                     {
-                        mc.add(s);
+                        if (wc.ContainsKey(s))
+                            wc[s]++;
+                        else
+                            wc.Add(s, 1);
                     }
                 }
             
-            foreach (KeyValuePair<String, int> element in mc.hm)
+            foreach (KeyValuePair<string, int> item in wc)
             {
-                double tarFreq = (double)element.Value / mc.size();
-                if (wordMap[element.Key] != null)
+                double tarFreq = (double)item.Value / wc.Count;
+                if (wordMap[item.Key] != null)
                 {
-                    double srcFreq = wordMap[element.Key].freq;
+                    double srcFreq = wordMap[item.Key].freq;
                     if (srcFreq >= tarFreq)
                     {
                         continue;
                     }
                     else
                     {
-                        Neuron wordNeuron = wordMap[element.Key];
+                        Neuron wordNeuron = wordMap[item.Key];
                         wordNeuron.category = category;
                         wordNeuron.freq = tarFreq;
                     }
                 }
                 else
                 {
-                    wordMap.Add(element.Key, new WordNeuron(element.Key,
+                    wordMap.Add(item.Key, new WordNeuron(item.Key,
                         tarFreq, category, layerSize));
                 }
             }
@@ -479,7 +406,7 @@ namespace Word2VecSharp
         /// <summary>
         /// Precompute the exp() table f(x) = x / (x + 1)
         /// </summary>
-        private void createExpTable()
+        private void CreateExpTable()
         {
             for (int i = 0; i < EXP_TABLE_SIZE; i++)
             {
@@ -492,18 +419,26 @@ namespace Word2VecSharp
         /// 根据文件学习
         /// </summary>
         /// <param name="file"></param>
-        public void learnFile(string file)
+        public void LearnFile(string file)
         {
+            Stopwatch w = Stopwatch.StartNew();
             readVocab(file);
+            Console.WriteLine("读取耗时：" + w.ElapsedMilliseconds);
+            w = Stopwatch.StartNew();
             new Haffman(layerSize).make(wordMap.Values);
+            Console.WriteLine("make 耗时：" + w.ElapsedMilliseconds);
 
+            w = Stopwatch.StartNew();
             // 查找每个神经元
             foreach (Neuron neuron in wordMap.Values)
             {
                 ((WordNeuron)neuron).makeNeurons();
             }
+            Console.WriteLine("查找每个神经元耗时:" + w.ElapsedMilliseconds);
 
+            w = Stopwatch.StartNew(); 
             trainModel(file);
+            Console.WriteLine("训练耗时:" + w.ElapsedMilliseconds);
         }
 
         /// <summary>
@@ -511,10 +446,9 @@ namespace Word2VecSharp
         /// </summary>
         /// <param name="summaryFile">合并文件</param>
         /// <param name="classifiedFiles">分类文件</param>
-        public void learnFile(string summaryFile, string[] classifiedFiles)
-
+        public void LearnFile(string summaryFile, string[] classifiedFiles)
         {
-            readVocabWithSupervised(classifiedFiles);
+            ReadVocabWithSupervised(classifiedFiles);
             new Haffman(layerSize).make(wordMap.Values);
             // 查找每个神经元
             foreach (Neuron neuron in wordMap.Values)
@@ -528,82 +462,27 @@ namespace Word2VecSharp
         /// 保存模型
         /// </summary>
         /// <param name="file"></param>
-        public void saveModel(string file)
+        public void SaveModel(string file)
         {
-            BinaryWriter dataOutputStream = new BinaryWriter(new FileStream(file, FileMode.Create),Encoding.UTF8);
-            dataOutputStream.Write(wordMap.Count);
-            dataOutputStream.Write(layerSize);
-            double[] syn0 = null;
-            foreach (KeyValuePair<String, WordNeuron> element in wordMap)
+            using (FileStream fs = new FileStream(file, FileMode.Create))
             {
-                dataOutputStream.Write(element.Key);
-                syn0 = ((WordNeuron)element.Value).syn0;
-                foreach (double d in syn0)
+                BinaryWriter writer = new BinaryWriter(fs, Encoding.UTF8);
+                writer.Write(wordMap.Count);
+                writer.Write(layerSize);
+                double[] syn0 = null;
+                foreach (KeyValuePair<String, WordNeuron> item in wordMap)
                 {
-                    dataOutputStream.Write((float)d);
+                    writer.Write(item.Key);
+                    syn0 = ((WordNeuron)item.Value).syn0;
+                    foreach (double d in syn0)
+                    {
+                        writer.Write((float)d);
+                    }
                 }
+                writer.Close();
+                fs.Close();
             }
         }
 
-        public int getLayerSize()
-        {
-            return layerSize;
-        }
-
-        public void setLayerSize(int layerSize)
-        {
-            this.layerSize = layerSize;
-        }
-
-        public int getWindow()
-        {
-            return window;
-        }
-
-        public void setWindow(int window)
-        {
-            this.window = window;
-        }
-
-        public double getSample()
-        {
-            return sample;
-        }
-
-        public void setSample(double sample)
-        {
-            this.sample = sample;
-        }
-
-        public double getAlpha()
-        {
-            return alpha;
-        }
-
-        public void setAlpha(double alpha)
-        {
-            this.alpha = alpha;
-            this.startingAlpha = alpha;
-        }
-
-        public Boolean getIsCbow()
-        {
-            return isCbow;
-        }
-
-        public void setIsCbow(Boolean isCbow)
-        {
-            this.isCbow = isCbow;
-        }
-
-        public static void main(String[] args)
-        {
-            Learn learn = new Learn();
-            Stopwatch w = Stopwatch.StartNew();
-            learn.learnFile("library/xh.txt");
-            Console.WriteLine("use time " + w.ElapsedMilliseconds);
-            learn.saveModel("library/javaVector");
-
-        }
     }
 }

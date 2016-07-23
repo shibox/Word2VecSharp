@@ -6,11 +6,12 @@ using System.Threading.Tasks;
 
 namespace Word2VecSharp
 {
-    public abstract class Neuron : IComparable<Neuron>
+    public abstract class Neuron : IComparable<Neuron>,IEquatable<Neuron>
     {
         public double freq;
         public Neuron parent;
         public int code;
+        public bool isUsed = false;
         /// <summary>
         /// 语料预分类
         /// </summary>
@@ -20,6 +21,8 @@ namespace Word2VecSharp
         {
             if (this.category == other.category)
             {
+                if (other.isUsed == true)
+                    return 0;
                 if (this.freq > other.freq)
                 {
                     return 1;
@@ -43,5 +46,9 @@ namespace Word2VecSharp
             }
         }
 
+        public bool Equals(Neuron other)
+        {
+            return this.isUsed == true;
+        }
     }
 }

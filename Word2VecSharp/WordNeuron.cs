@@ -8,8 +8,11 @@ namespace Word2VecSharp
 {
     public class WordNeuron : Neuron
     {
-        public String name;
-        public double[] syn0 = null; // input->hidden
+        public string name;
+        /// <summary>
+        /// input->hidden
+        /// </summary>
+        public double[] syn0 = null;
         /// <summary>
         /// 路径神经元
         /// </summary>
@@ -17,7 +20,9 @@ namespace Word2VecSharp
         public int[] codeArr = null;
 
         public WordNeuron()
-        { }
+        {
+
+        }
 
         public List<Neuron> makeNeurons()
         {
@@ -73,11 +78,6 @@ namespace Word2VecSharp
             {
                 syn0[i] = (random.NextDouble() - 0.5) / layerSize;
             }
-        }
-
-        public override int GetHashCode()
-        {
-            return name.GetHashCode();
         }
 
     }

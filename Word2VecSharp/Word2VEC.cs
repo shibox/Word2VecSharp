@@ -9,57 +9,27 @@ namespace Word2VecSharp
 {
     public class Word2Vec
     {
-        private Dictionary<String, float[]> wordMap = new Dictionary<string, float[]>();
+        #region 字段
 
-        private int words;
-        private int size;
-        private int topNSize = 40;
+        private static int MAX_SIZE = 50;
+        /// <summary>
+        /// 词向量
+        /// </summary>
+        public Dictionary<string, float[]> wordMap = new Dictionary<string, float[]>();
+        public int words;
+        public int size;
+        public int topN = 10;
+
+        #endregion
+
+        #region 公共
 
         /// <summary>
         /// 加载模型
         /// </summary>
         /// <param name="path">模型的路径</param>
-        public void loadGoogleModel(String path)
+        public void LoadGoogleModel(string path)
         {
-            //  DataInputStream dis = null;
-            //  BufferedInputStream bis = null;
-            //double len = 0;
-            //float vector = 0;
-            //try {
-            //      bis = new BufferedInputStream(new FileInputStream(path));
-            //      dis = new DataInputStream(bis);
-            //      // //读取词数
-            //      words = Integer.parseInt(readString(dis));
-            //      // //大小
-            //      size = Integer.parseInt(readString(dis));
-            //      String word;
-            //      float[] vectors = null;
-            //      for (int i = 0; i < words; i++)
-            //      {
-            //          word = readString(dis);
-            //          vectors = new float[size];
-            //          len = 0;
-            //          for (int j = 0; j < size; j++)
-            //          {
-            //              vector = readFloat(dis);
-            //              len += vector * vector;
-            //              vectors[j] = (float)vector;
-            //          }
-            //          len = Math.sqrt(len);
-
-            //          for (int j = 0; j < size; j++)
-            //          {
-            //              vectors[j] /= len;
-            //          }
-
-            //          wordMap.put(word, vectors);
-            //          dis.read();
-            //      }
-            //  } finally {
-            //      bis.close();
-            //      dis.close();
-            //  }
-
             BinaryReader dis = new BinaryReader(new FileStream(path, FileMode.Open));
             double len = 0;
             float vector = 0;
@@ -103,15 +73,14 @@ namespace Word2VecSharp
         /// 加载模型
         /// </summary>
         /// <param name="path">模型的路径</param>
-        public void loadJavaModel(String path)
+        public void LoadModel(string path)
         {
             BinaryReader dis = new BinaryReader(new FileStream(path, FileMode.Open), Encoding.UTF8);
             words = dis.ReadInt32();
             size = dis.ReadInt32();
-
             float vector = 0;
 
-            String key = null;
+            string key = null;
             float[] value = null;
             for (int i = 0; i < words; i++)
             {
@@ -137,25 +106,22 @@ namespace Word2VecSharp
 
         }
 
-        private static int MAX_SIZE = 50;
-
         /// <summary>
         /// 近义词
         /// </summary>
-        /// <param name="word0"></param>
-        /// <param name="word1"></param>
-        /// <param name="word2"></param>
+        /// <param name="w0"></param>
+        /// <param name="w1"></param>
+        /// <param name="w2"></param>
         /// <returns></returns>
-        public HashSet<WordEntry> analogy(String word0, String word1, String word2)
+        public HashSet<WordEntry> Analogy(string w0, string w1, string w2)
         {
-            float[] wv0 = getWordVector(word0);
-            float[] wv1 = getWordVector(word1);
-            float[] wv2 = getWordVector(word2);
+            float[] wv0 = wordMap[w0];
+            float[] wv1 = wordMap[w1];
+            float[] wv2 = wordMap[w2];
 
             if (wv1 == null || wv2 == null || wv0 == null)
-            {
                 return null;
-            }
+
             float[] wordVector = new float[size];
             for (int i = 0; i < size; i++)
             {
@@ -163,14 +129,13 @@ namespace Word2VecSharp
             }
             float[] tempVector;
             String name;
-            List<WordEntry> wordEntrys = new List<WordEntry>(topNSize);
+            List<WordEntry> wordEntrys = new List<WordEntry>(topN);
             foreach (KeyValuePair<String, float[]> entry in wordMap)
             {
                 name = entry.Key;
-                if (name.Equals(word0) || name.Equals(word1) || name.Equals(word2))
-                {
+                if (name.Equals(w0) || name.Equals(w1) || name.Equals(w2))
                     continue;
-                }
+
                 float dist = 0;
                 tempVector = entry.Value;
                 for (int i = 0; i < wordVector.Length; i++)
@@ -182,42 +147,14 @@ namespace Word2VecSharp
             return new HashSet<WordEntry>(wordEntrys);
         }
 
-        private void insertTopN(String name, float score, List<WordEntry> wordsEntrys)
+        public SortedSet<WordEntry> Distance(string word)
         {
-            if (wordsEntrys.Count < topNSize)
-            {
-                wordsEntrys.Add(new WordEntry(name, score));
-                return;
-            }
-            float min = float.MaxValue;
-            int minOffe = 0;
-            for (int i = 0; i < topNSize; i++)
-            {
-                WordEntry wordEntry = wordsEntrys[i];
-                if (min > wordEntry.score)
-                {
-                    min = wordEntry.score;
-                    minOffe = i;
-                }
-            }
-
-            if (score > min)
-            {
-                wordsEntrys[minOffe] = new WordEntry(name, score);
-            }
-
-        }
-
-        public HashSet<WordEntry> distance(String queryWord)
-        {
-            float[] center = wordMap[queryWord];
+            float[] center = wordMap[word];
             if (center == null)
-            {
                 return null;
-            }
 
-            int resultSize = wordMap.Count < topNSize ? wordMap.Count : topNSize;
-            HashSet<WordEntry> result = new HashSet<WordEntry>();
+            int resultSize = wordMap.Count < topN ? wordMap.Count : topN;
+            SortedSet<WordEntry> result = new SortedSet<WordEntry>();
 
             double min = float.MinValue;
             foreach (KeyValuePair<String, float[]> entry in wordMap)
@@ -235,16 +172,21 @@ namespace Word2VecSharp
                     if (resultSize < result.Count)
                     {
                         //result.pollLast();
+
+                        result.ElementAt(result.Count - 1).isUsed = true;
+                        result.RemoveWhere(item => item.isUsed == true);
                     }
                     min = result.Last().score;
                 }
             }
             //result.pollFirst();
+            //result.ElementAt(0).isUsed = true;
+            //result.RemoveWhere(item => item.isUsed == true);
 
             return result;
         }
 
-        public HashSet<WordEntry> distance(List<String> words)
+        public HashSet<WordEntry> Distance(List<string> words)
         {
             float[] center = null;
             foreach (String word in words)
@@ -257,9 +199,9 @@ namespace Word2VecSharp
                 return new HashSet<WordEntry>();
             }
 
-            int resultSize = wordMap.Count < topNSize ? wordMap.Count : topNSize;
+            int resultSize = wordMap.Count < topN ? wordMap.Count : topN;
             HashSet<WordEntry> result = new HashSet<WordEntry>();
-            
+
             double min = float.MinValue;
             foreach (KeyValuePair<String, float[]> entry in wordMap)
             {
@@ -285,6 +227,36 @@ namespace Word2VecSharp
             return result;
         }
 
+        #endregion
+
+        #region 私有
+
+        private void insertTopN(string name, float score, List<WordEntry> wordsEntrys)
+        {
+            if (wordsEntrys.Count < topN)
+            {
+                wordsEntrys.Add(new WordEntry(name, score));
+                return;
+            }
+            float min = float.MaxValue;
+            int minOffe = 0;
+            for (int i = 0; i < topN; i++)
+            {
+                WordEntry wordEntry = wordsEntrys[i];
+                if (min > wordEntry.score)
+                {
+                    min = wordEntry.score;
+                    minOffe = i;
+                }
+            }
+
+            if (score > min)
+            {
+                wordsEntrys[minOffe] = new WordEntry(name, score);
+            }
+
+        }
+
         private float[] sum(float[] center, float[] fs)
         {
             if (center == null && fs == null)
@@ -308,16 +280,6 @@ namespace Word2VecSharp
             }
 
             return center;
-        }
-
-        /// <summary>
-        /// 得到词向量
-        /// </summary>
-        /// <param name="word"></param>
-        /// <returns></returns>
-        public float[] getWordVector(String word)
-        {
-            return wordMap[word];
         }
 
         public static float readFloat(BinaryReader fs)
@@ -348,7 +310,7 @@ namespace Word2VecSharp
         /// </summary>
         /// <param name="dis"></param>
         /// <returns></returns>
-        private static String readString(BinaryReader dis)
+        private static string readString(BinaryReader dis)
         {
             byte[] bytes = new byte[MAX_SIZE];
             int b = dis.ReadByte();
@@ -372,30 +334,7 @@ namespace Word2VecSharp
 
         }
 
-        public int getTopNSize()
-        {
-            return topNSize;
-        }
-
-        public void setTopNSize(int topNSize)
-        {
-            this.topNSize = topNSize;
-        }
-
-        public Dictionary<String, float[]> getWordMap()
-        {
-            return wordMap;
-        }
-
-        public int getWords()
-        {
-            return words;
-        }
-
-        public int getSize()
-        {
-            return size;
-        }
+        #endregion
 
     }
 }

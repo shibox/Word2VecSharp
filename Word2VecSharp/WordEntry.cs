@@ -10,6 +10,7 @@ namespace Word2VecSharp
     {
         public string name;
         public float score;
+        public bool isUsed;
 
         public WordEntry(string name, float score)
         {
@@ -20,13 +21,15 @@ namespace Word2VecSharp
 
         public override string ToString()
         {
-            return this.name + "\t" + score;
+            return name + "\t" + score;
         }
 
 
         public int CompareTo(WordEntry o)
         {
-            if (this.score < o.score)
+            if (o.isUsed == true)
+                return 0;
+            if (score < o.score)
             {
                 return 1;
             }

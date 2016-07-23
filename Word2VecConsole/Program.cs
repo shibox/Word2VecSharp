@@ -11,21 +11,24 @@ namespace Word2VecConsole
 {
     class Program
     {
-        private static string file = "D:\\weiwei\\OSS\\result.txt";
-
+        //private static string file = "D:\\weiwei\\OSS\\result.txt";
+        private static string file = "D:\\weiwei\\Java\\Corpu.txt";
 
         static void Main(string[] args)
         {
 
             //进行分词训练
             Learn lean = new Learn();
-            lean.learnFile(file);
-            lean.saveModel("D:\\weiwei\\OSS\\vector.mod");
+            lean.LearnFile(file);
+            lean.SaveModel("D:\\weiwei\\OSS\\vector.mod");
 
             //加载测试
             Word2Vec w2v = new Word2Vec();
-            w2v.loadJavaModel("D:\\weiwei\\OSS\\vector.mod");
-            Console.WriteLine(w2v.distance("执行"));
+            w2v.LoadModel("D:\\weiwei\\OSS\\vector.mod");
+            //Console.WriteLine(JsonConvert.SerializeObject(w2v.distance("算法"), Formatting.Indented));
+            //Console.WriteLine(JsonConvert.SerializeObject(w2v.distance("群众/n")));
+            Console.WriteLine(w2v.Distance("群众/n").Count);
+            Console.ReadLine();
         }
 
         public static void Word2VecTest(String[] args)
@@ -59,9 +62,9 @@ namespace Word2VecConsole
         public static void WordKmeansTest(String[] args)
         {
             Word2Vec vec = new Word2Vec();
-            vec.loadGoogleModel("vectors.bin");
+            vec.LoadGoogleModel("vectors.bin");
             Console.WriteLine("load model ok!");
-            WordKmeans wordKmeans = new WordKmeans(vec.getWordMap(), 50, 50);
+            WordKmeans wordKmeans = new WordKmeans(vec.wordMap, 50, 50);
             Classes[] explain = wordKmeans.explain();
 
             for (int i = 0; i < explain.Length; i++)
@@ -69,7 +72,8 @@ namespace Word2VecConsole
                 Console.WriteLine("--------" + i + "---------");
                 Console.WriteLine(explain[i].getTop(10));
             }
-
         }
+
+
     }
 }
