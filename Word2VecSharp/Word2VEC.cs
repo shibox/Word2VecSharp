@@ -47,7 +47,7 @@ namespace Word2VecSharp
                     len = 0;
                     for (int j = 0; j < size; j++)
                     {
-                        vector = readFloat(reader);
+                        vector = reader.ReadSingle();
                         len += vector * vector;
                         vectors[j] = vector;
                     }
@@ -192,7 +192,7 @@ namespace Word2VecSharp
             float[] center = null;
             foreach (String word in words)
             {
-                center = sum(center, wordMap[word]);
+                center = Sum(center, wordMap[word]);
             }
 
             if (center == null)
@@ -258,7 +258,7 @@ namespace Word2VecSharp
 
         }
 
-        private float[] sum(float[] center, float[] fs)
+        private float[] Sum(float[] center, float[] fs)
         {
             if (center == null && fs == null)
             {
@@ -281,29 +281,6 @@ namespace Word2VecSharp
             }
 
             return center;
-        }
-
-        public static float readFloat(BinaryReader fs)
-        {
-            byte[] bytes = new byte[4];
-            fs.Read(bytes, 0, bytes.Length);
-            return getFloat(bytes);
-        }
-
-        /// <summary>
-        /// 读取一个float
-        /// </summary>
-        /// <param name="b"></param>
-        /// <returns></returns>
-        public static float getFloat(byte[] b)
-        {
-            //int accum = 0;
-            //accum = accum | (b[0] & 0xff) << 0;
-            //accum = accum | (b[1] & 0xff) << 8;
-            //accum = accum | (b[2] & 0xff) << 16;
-            //accum = accum | (b[3] & 0xff) << 24;
-            //return Float.intBitsToFloat(accum);
-            return 0;
         }
 
         /// <summary>
