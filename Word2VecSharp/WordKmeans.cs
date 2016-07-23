@@ -9,71 +9,71 @@ namespace Word2VecSharp
     /// <summary>
     /// keanmeans聚类
     /// </summary>
-    public class WordKmeans
+    public class WordKMeans
     {
         private Dictionary<string, float[]> wordMap = null;
 
         private int iter;
 
-        private Classes[] cArray = null;
+        private Classes[] array = null;
 
-        public WordKmeans(Dictionary<string, float[]> wordMap, int clcn, int iter)
+        public WordKMeans(Dictionary<string, float[]> wordMap, int clcn, int iter)
         {
             this.wordMap = wordMap;
             this.iter = iter;
-            cArray = new Classes[clcn];
+            array = new Classes[clcn];
         }
 
-        public Classes[] explain()
+        public Classes[] Explain()
         {
             //取前clcn个点
             int n = 0;
             foreach (KeyValuePair<string, float[]> item in wordMap)
             {
-                if (n < cArray.Length)
-                    cArray[n++] = new Classes(n, item.Value);
+                if (n < array.Length)
+                    array[n++] = new Classes(n, item.Value);
                 else
                     break;
             }
 
             for (int i = 0; i < iter; i++)
             {
-                foreach (Classes classes in cArray)
+                foreach (Classes item in array)
                 {
-                    classes.clean();
+                    item.Clean();
                 }
                 foreach (KeyValuePair<string, float[]> item in wordMap)
                 {
                     double miniScore = Double.MaxValue;
                     double tempScore;
                     int classesId = 0;
-                    foreach (Classes classes in cArray)
+                    foreach (Classes classes in array)
                     {
-                        tempScore = classes.distance(item.Value);
+                        tempScore = classes.Distance(item.Value);
                         if (miniScore > tempScore)
                         {
                             miniScore = tempScore;
                             classesId = classes.id;
                         }
                     }
-                    cArray[classesId].putValue(item.Key, miniScore);
+                    array[classesId].PutValue(item.Key, miniScore);
                 }
 
-                foreach (Classes classes in cArray)
+                foreach (Classes classes in array)
                 {
-                    classes.updateCenter(wordMap);
+                    classes.UpdateCenter(wordMap);
                 }
                 Console.WriteLine("iter " + i + " ok!");
             }
 
-            return cArray;
+            return array;
         }
 
         public class Classes
         {
-            internal int id;
-
+            Dictionary<string, double> values = new Dictionary<string, double>();
             internal float[] center;
+            internal int id;
 
             public Classes(int id, float[] center)
             {
@@ -81,9 +81,7 @@ namespace Word2VecSharp
                 this.center = (float[])center.Clone();
             }
 
-            Dictionary<String, Double> values = new Dictionary<string, double>();
-
-            public double distance(float[] value)
+            public double Distance(float[] value)
             {
                 double sum = 0;
                 for (int i = 0; i < value.Length; i++)
@@ -93,7 +91,7 @@ namespace Word2VecSharp
                 return sum;
             }
 
-            public void putValue(String word, double score)
+            public void PutValue(string word, double score)
             {
                 values.Add(word, score);
             }
@@ -102,14 +100,14 @@ namespace Word2VecSharp
             /// 重新计算中心点
             /// </summary>
             /// <param name="wordMap"></param>
-            public void updateCenter(Dictionary<String, float[]> wordMap)
+            public void UpdateCenter(Dictionary<string, float[]> wordMap)
             {
                 for (int i = 0; i < center.Length; i++)
                 {
                     center[i] = 0;
                 }
                 float[] value = null;
-                foreach (String keyWord in values.Keys)
+                foreach (string keyWord in values.Keys)
                 {
                     value = wordMap[keyWord];
                     for (int i = 0; i < value.Length; i++)
@@ -126,7 +124,7 @@ namespace Word2VecSharp
             /// <summary>
             /// 清空历史结果
             /// </summary>
-            public void clean()
+            public void Clean()
             {
                 values.Clear();
             }
@@ -136,17 +134,16 @@ namespace Word2VecSharp
             /// </summary>
             /// <param name="n"></param>
             /// <returns></returns>
-            public List<KeyValuePair<String, Double>> getTop(int n)
+            public List<KeyValuePair<string, double>> GetTop(int n)
             {
-                List<KeyValuePair<String, Double>> arrayList = values.ToList();
+                List<KeyValuePair<string, double>> arrayList = values.ToList();
                 arrayList.Sort(
-                    delegate (KeyValuePair<String, Double> x, KeyValuePair<String, Double> y) 
+                    delegate (KeyValuePair<string, double> x, KeyValuePair<string, double> y) 
                     { return x.Value > y.Value ? 1 : -1; }
                 );
                 int min = Math.Min(n, arrayList.Count - 1);
                 if (min <= 1) return new List<KeyValuePair<string, double>>();
-                //return arrayList.subList(0, min);
-                return arrayList;
+                return arrayList.GetRange(0,min);
 
             }
 

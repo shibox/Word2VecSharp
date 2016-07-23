@@ -53,7 +53,7 @@
     <Compile Include="RedBlackTree\RedBlackTree.cs" />
     <Compile Include="Word2Vec.cs" />
     <Compile Include="WordEntry.cs" />
-    <Compile Include="WordKmeans.cs" />
+    <Compile Include="WordKMeans.cs" />
     <Compile Include="WordNeuron.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

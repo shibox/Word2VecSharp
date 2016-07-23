@@ -30,27 +30,26 @@ namespace Word2VecSharp
         /// <param name="path">模型的路径</param>
         public void LoadGoogleModel(string path)
         {
-            BinaryReader dis = new BinaryReader(new FileStream(path, FileMode.Open));
-            double len = 0;
-            float vector = 0;
-            try
+            using (FileStream fs = new FileStream(path, FileMode.Open))
             {
-                //读取词数
-                words = int.Parse(readString(dis));
-                //大小
-                size = int.Parse(readString(dis));
-                String word;
+                BinaryReader reader = new BinaryReader(fs);
+                double len = 0;
+                float vector = 0;
+                //读取词数及大小
+                words = int.Parse(readString(reader));
+                size = int.Parse(readString(reader));
+                string word;
                 float[] vectors = null;
                 for (int i = 0; i < words; i++)
                 {
-                    word = readString(dis);
+                    word = readString(reader);
                     vectors = new float[size];
                     len = 0;
                     for (int j = 0; j < size; j++)
                     {
-                        vector = readFloat(dis);
+                        vector = readFloat(reader);
                         len += vector * vector;
-                        vectors[j] = (float)vector;
+                        vectors[j] = vector;
                     }
                     len = Math.Sqrt(len);
 
@@ -60,13 +59,12 @@ namespace Word2VecSharp
                     }
 
                     wordMap.Add(word, vectors);
-                    dis.Read();
+                    reader.Read();
                 }
+                reader.Close();
+                fs.Close();
             }
-            finally
-            {
-                dis.Close();
-            }
+                
         }
 
         /// <summary>
@@ -75,35 +73,38 @@ namespace Word2VecSharp
         /// <param name="path">模型的路径</param>
         public void LoadModel(string path)
         {
-            BinaryReader dis = new BinaryReader(new FileStream(path, FileMode.Open), Encoding.UTF8);
-            words = dis.ReadInt32();
-            size = dis.ReadInt32();
-            float vector = 0;
-
-            string key = null;
-            float[] value = null;
-            for (int i = 0; i < words; i++)
+            using (FileStream fs = new FileStream(path, FileMode.Open))
             {
-                double len = 0;
-                key = dis.ReadString();
-                value = new float[size];
-                for (int j = 0; j < size; j++)
-                {
-                    vector = dis.ReadSingle();
-                    len += vector * vector;
-                    value[j] = vector;
-                }
+                BinaryReader reader = new BinaryReader(fs, Encoding.UTF8);
+                words = reader.ReadInt32();
+                size = reader.ReadInt32();
+                float vector = 0;
 
-                len = Math.Sqrt(len);
-
-                for (int j = 0; j < size; j++)
+                string key = null;
+                float[] value = null;
+                for (int i = 0; i < words; i++)
                 {
-                    value[j] = (float)(value[j] / len);
+                    double len = 0;
+                    key = reader.ReadString();
+                    value = new float[size];
+                    for (int j = 0; j < size; j++)
+                    {
+                        vector = reader.ReadSingle();
+                        len += vector * vector;
+                        value[j] = vector;
+                    }
+
+                    len = Math.Sqrt(len);
+
+                    for (int j = 0; j < size; j++)
+                    {
+                        value[j] = (float)(value[j] / len);
+                    }
+                    wordMap.Add(key, value);
                 }
-                wordMap.Add(key, value);
+                reader.Close();
+                fs.Close();
             }
-
-
         }
 
         /// <summary>
@@ -128,9 +129,9 @@ namespace Word2VecSharp
                 wordVector[i] = wv1[i] - wv0[i] + wv2[i];
             }
             float[] tempVector;
-            String name;
+            string name;
             List<WordEntry> wordEntrys = new List<WordEntry>(topN);
-            foreach (KeyValuePair<String, float[]> entry in wordMap)
+            foreach (KeyValuePair<string, float[]> entry in wordMap)
             {
                 name = entry.Key;
                 if (name.Equals(w0) || name.Equals(w1) || name.Equals(w2))
@@ -157,7 +158,7 @@ namespace Word2VecSharp
             SortedSet<WordEntry> result = new SortedSet<WordEntry>();
 
             double min = float.MinValue;
-            foreach (KeyValuePair<String, float[]> entry in wordMap)
+            foreach (KeyValuePair<string, float[]> entry in wordMap)
             {
                 float[] vector = entry.Value;
                 float dist = 0;

@@ -25,7 +25,7 @@ namespace Word2VecSharp
         private SortedSet<Neuron> set = new SortedSet<Neuron>();
         //RedBlackTree<Neuron, bool> set = new RedBlackTree<Neuron, bool>(null);
 
-        public void make(IEnumerable<Neuron> neurons)
+        public void Make(IEnumerable<Neuron> neurons)
         {
             startCount = neurons.Count();
             foreach (Neuron item in neurons)
@@ -39,12 +39,12 @@ namespace Word2VecSharp
 
             while (set.Count > 1)
             {
-                merger();
+                Merge();
             }
 
         }
 
-        private void merger()
+        private void Merge()
         {
             HiddenNeuron hn = new HiddenNeuron(layerSize);
             //Neuron min1 = set.First();

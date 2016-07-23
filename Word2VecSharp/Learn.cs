@@ -425,14 +425,14 @@ namespace Word2VecSharp
             readVocab(file);
             Console.WriteLine("读取耗时：" + w.ElapsedMilliseconds);
             w = Stopwatch.StartNew();
-            new Haffman(layerSize).make(wordMap.Values);
+            new Haffman(layerSize).Make(wordMap.Values);
             Console.WriteLine("make 耗时：" + w.ElapsedMilliseconds);
 
             w = Stopwatch.StartNew();
             // 查找每个神经元
             foreach (Neuron neuron in wordMap.Values)
             {
-                ((WordNeuron)neuron).makeNeurons();
+                ((WordNeuron)neuron).MakeNeurons();
             }
             Console.WriteLine("查找每个神经元耗时:" + w.ElapsedMilliseconds);
 
@@ -449,11 +449,11 @@ namespace Word2VecSharp
         public void LearnFile(string summaryFile, string[] classifiedFiles)
         {
             ReadVocabWithSupervised(classifiedFiles);
-            new Haffman(layerSize).make(wordMap.Values);
+            new Haffman(layerSize).Make(wordMap.Values);
             // 查找每个神经元
             foreach (Neuron neuron in wordMap.Values)
             {
-                ((WordNeuron)neuron).makeNeurons();
+                ((WordNeuron)neuron).MakeNeurons();
             }
             trainModel(summaryFile);
         }

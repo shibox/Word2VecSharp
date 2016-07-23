@@ -24,7 +24,7 @@ namespace Word2VecSharp
 
         }
 
-        public List<Neuron> makeNeurons()
+        public List<Neuron> MakeNeurons()
         {
             if (neurons != null)
             {
@@ -48,7 +48,7 @@ namespace Word2VecSharp
             return neurons;
         }
 
-        public WordNeuron(String name, double freq, int layerSize)
+        public WordNeuron(string name, double freq, int layerSize)
         {
             this.name = name;
             this.freq = freq;

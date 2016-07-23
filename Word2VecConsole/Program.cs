@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Word2VecSharp;
-using static Word2VecSharp.WordKmeans;
+using static Word2VecSharp.WordKMeans;
 
 namespace Word2VecConsole
 {
@@ -64,13 +64,13 @@ namespace Word2VecConsole
             Word2Vec vec = new Word2Vec();
             vec.LoadGoogleModel("vectors.bin");
             Console.WriteLine("load model ok!");
-            WordKmeans wordKmeans = new WordKmeans(vec.wordMap, 50, 50);
-            Classes[] explain = wordKmeans.explain();
+            WordKMeans wordKmeans = new WordKMeans(vec.wordMap, 50, 50);
+            Classes[] explain = wordKmeans.Explain();
 
             for (int i = 0; i < explain.Length; i++)
             {
                 Console.WriteLine("--------" + i + "---------");
-                Console.WriteLine(explain[i].getTop(10));
+                Console.WriteLine(explain[i].GetTop(10));
             }
         }
 
