@@ -21,32 +21,26 @@ namespace Word2VecSharp
             this.layerSize = layerSize;
         }
 
-        //int idx = 0;
-        //int startCount = 0;
-        //private SortedSet<Neuron> set = new SortedSet<Neuron>();
-        //RedBlackTree<Neuron, bool> set = new RedBlackTree<Neuron, bool>(null);
         private java.util.TreeSet set = new TreeSet();
 
         public void Make(IEnumerable<Neuron> neurons)
         {
+            #region test
             //startCount = neurons.Count();
             //foreach (Neuron item in neurons)
             //    set.Add(item);
-
-
             ////while (set.Count < startCount * 2 - 1)
             ////{
             ////    merger();
             ////}
-
             //while (set.Count > 1)
             //{
             //    Merge();
             //}
+            #endregion
 
             foreach (Neuron item in neurons)
                 set.add(item);
-            //set.addAll(neurons);
             while (set.size() > 1)
             {
                 Merge();
@@ -66,9 +60,7 @@ namespace Word2VecSharp
             min2.code = 1;
             set.Add(hn);
 
-
-
-
+            #region test
             //HiddenNeuron hn = new HiddenNeuron(layerSize);
             ////Neuron min1 = set.First();
             ////set.Remove(min1);
@@ -94,6 +86,7 @@ namespace Word2VecSharp
             //min1.code = 0;
             //min2.code = 1;
             //set.Add(hn);
+            #endregion
         }
 
     }

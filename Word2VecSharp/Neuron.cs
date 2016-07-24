@@ -11,7 +11,6 @@ namespace Word2VecSharp
         public double freq;
         public Neuron parent;
         public int code;
-        //public bool isUsed = false;
         /// <summary>
         /// 语料预分类
         /// </summary>
@@ -21,8 +20,6 @@ namespace Word2VecSharp
         {
             if (this.category == other.category)
             {
-                //if (other.isUsed == true)
-                //    return 0;
                 if (this.freq > other.freq)
                 {
                     return 1;
