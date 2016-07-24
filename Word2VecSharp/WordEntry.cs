@@ -6,13 +6,12 @@ using System.Threading.Tasks;
 
 namespace Word2VecSharp
 {
-    public class WordEntry : IComparable<WordEntry>
+    public class WordEntry : IComparable<WordEntry>,IComparable
     {
         public string name;
-        public float score;
-        public bool isUsed;
+        public double score;
 
-        public WordEntry(string name, float score)
+        public WordEntry(string name, double score)
         {
             this.name = name;
             this.score = score;
@@ -27,17 +26,19 @@ namespace Word2VecSharp
 
         public int CompareTo(WordEntry o)
         {
-            if (o.isUsed == true)
-                return 0;
             if (score < o.score)
-            {
                 return 1;
-            }
             else
-            {
                 return -1;
-            }
         }
 
+        public int CompareTo(object obj)
+        {
+            WordEntry o = (WordEntry)obj;
+            if (score < o.score)
+                return 1;
+            else
+                return -1;
+        }
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -12,22 +14,38 @@ namespace Word2VecConsole
     class Program
     {
         //private static string file = "D:\\weiwei\\OSS\\result.txt";
-        private static string file = "D:\\weiwei\\Java\\Corpu.txt";
+        //private static string file = "D:\\weiwei\\Java\\CorpuAll.txt";
+        private static string file = "D:\\weiwei\\Java\\corpus_big.txt";
+        
 
         static void Main(string[] args)
         {
-
-            //进行分词训练
-            Learn lean = new Learn();
-            lean.LearnFile(file);
-            lean.SaveModel("D:\\weiwei\\OSS\\vector.mod");
+            string output = "D:\\weiwei\\OSS\\vector.mod";
+            if (File.Exists(output) == false)
+            {
+                //进行分词训练
+                Learn lean = new Learn();
+                lean.LearnFile(file);
+                lean.SaveModel(output);
+            }
 
             //加载测试
-            Word2Vec w2v = new Word2Vec();
-            w2v.LoadModel("D:\\weiwei\\OSS\\vector.mod");
+            //Word2Vec w2v = new Word2Vec();
+            //FastWord2Vec w2v = new FastWord2Vec();
+            FastestWord2Vec w2v = new FastestWord2Vec();
+            w2v.LoadModel(output);
+
             //Console.WriteLine(JsonConvert.SerializeObject(w2v.distance("算法"), Formatting.Indented));
             //Console.WriteLine(JsonConvert.SerializeObject(w2v.distance("群众/n")));
-            Console.WriteLine(w2v.Distance("群众/n").Count);
+
+            Stopwatch w = Stopwatch.StartNew();
+            object o = w2v.Distance("群众/n");
+            //List<WordEntry> o = w2v.DistanceAll("群众/n");
+            //List<WordEntry> o = w2v.DistanceAll("中国/ns");
+            w.Stop();
+            File.WriteAllText("result.txt", JsonConvert.SerializeObject(o, Formatting.Indented));
+            Console.WriteLine(w.ElapsedMilliseconds);
+            //Console.WriteLine(o);
             Console.ReadLine();
         }
 
@@ -61,17 +79,17 @@ namespace Word2VecConsole
 
         public static void WordKmeansTest(String[] args)
         {
-            Word2Vec vec = new Word2Vec();
-            vec.LoadGoogleModel("vectors.bin");
-            Console.WriteLine("load model ok!");
-            WordKMeans wordKmeans = new WordKMeans(vec.wordMap, 50, 50);
-            Classes[] explain = wordKmeans.Explain();
+            //Word2Vec vec = new Word2Vec();
+            //vec.LoadGoogleModel("vectors.bin");
+            //Console.WriteLine("load model ok!");
+            //WordKMeans wordKmeans = new WordKMeans(vec.wordMap, 50, 50);
+            //Classes[] explain = wordKmeans.Explain();
 
-            for (int i = 0; i < explain.Length; i++)
-            {
-                Console.WriteLine("--------" + i + "---------");
-                Console.WriteLine(explain[i].GetTop(10));
-            }
+            //for (int i = 0; i < explain.Length; i++)
+            //{
+            //    Console.WriteLine("--------" + i + "---------");
+            //    Console.WriteLine(explain[i].GetTop(10));
+            //}
         }
 
 

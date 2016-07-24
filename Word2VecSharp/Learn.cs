@@ -15,9 +15,11 @@ namespace Word2VecSharp
         public const int EXP_TABLE_SIZE = 1000;
         private Dictionary<String, WordNeuron> wordMap = new Dictionary<string, WordNeuron>();
         private double[] expTable = new double[EXP_TABLE_SIZE];
-        private double[] neu1e = null;
-        private int trainWordsCount = 0;
-        private int MAX_EXP = 6;
+        //private double[] neu1e = null;
+        //private int trainWordsCount = 0;
+        //private int MAX_EXP = 6;
+        private double trainWordsCount = 0;
+        private double MAX_EXP = 6;
 
         #endregion
 
@@ -38,6 +40,14 @@ namespace Word2VecSharp
 
         #endregion
 
+        #region 构造函数
+
+        public Learn()
+        {
+            CreateExpTable();
+            //neu1e = new double[layerSize];// 误差项
+        }
+
         public Learn(bool isCbow, int layerSize, int window, double alpha, double sample)
         {
             CreateExpTable();
@@ -46,20 +56,18 @@ namespace Word2VecSharp
             this.window = window;
             this.alpha = alpha;
             this.sample = sample;
-            this.neu1e = new double[layerSize];// 误差项
+            //this.neu1e = new double[layerSize];// 误差项
         }
 
-        public Learn()
-        {
-            CreateExpTable();
-            neu1e = new double[layerSize];// 误差项
-        }
+        #endregion
+
+        #region 训练
 
         /// <summary>
         /// trainModel
         /// </summary>
         /// <param name="file"></param>
-        private void trainModel(string file)
+        private void TrainModel(string file)
         {
             #region old
             //    try (BufferedReader br = new BufferedReader(new InputStreamReader(
@@ -129,13 +137,13 @@ namespace Word2VecSharp
             {
                 if (wordCount - lastWordCount > 10000)
                 {
-                    Console.WriteLine("alpha:" + alpha + "\tProgress: "
+                    Console.WriteLine(
+                        "alpha:" + alpha + "\tProgress: "
                         + (int)(wordCountActual / (double)(trainWordsCount + 1) * 100)
                         + "%");
                     wordCountActual += wordCount - lastWordCount;
                     lastWordCount = wordCount;
-                    alpha = startingAlpha
-                        * (1 - wordCountActual / (double)(trainWordsCount + 1));
+                    alpha = startingAlpha * (1 - wordCountActual / (double)(trainWordsCount + 1));
                     if (alpha < startingAlpha * 0.0001)
                     {
                         alpha = startingAlpha * 0.0001;
@@ -146,7 +154,9 @@ namespace Word2VecSharp
                 List<WordNeuron> sentence = new List<WordNeuron>();
                 for (int i = 0; i < strs.Length; i++)
                 {
-                    Neuron entry = wordMap[strs[i]];
+                    //Neuron entry = wordMap[strs[i]];
+                    WordNeuron entry = null;
+                    wordMap.TryGetValue(strs[i], out entry);
                     if (entry == null)
                     {
                         continue;
@@ -201,6 +211,8 @@ namespace Word2VecSharp
                 c = index - window + a;
                 if (c < 0 || c >= sentence.Count)
                     continue;
+
+                double[] neu1e = new double[layerSize];// 误差项
                 // HIERARCHICAL SOFTMAX
                 List<Neuron> neurons = word.neurons;
                 WordNeuron we = sentence[c];
@@ -219,11 +231,13 @@ namespace Word2VecSharp
                     }
                     else
                     {
-                        f = (f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2);
+                        //f = (f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2);
+                        f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / (double)2);
                         f = expTable[(int)f];
                     }
                     // 'g' is the gradient multiplied by the learning rate
-                    double g = (1 - word.codeArr[i] - f) * alpha;
+                    //double g = (1 - word.codeArr[i] - f) * alpha;
+                    double g = ((double)1 - (double)word.codeArr[i] - f) * alpha;
                     // Propagate errors output -> hidden
                     for (c = 0; c < layerSize; c++)
                     {
@@ -276,7 +290,7 @@ namespace Word2VecSharp
                         neu1[c] += last_word.syn0[c];
                 }
             }
-                
+
             // HIERARCHICAL SOFTMAX
             for (int d = 0; d < neurons.Count; d++)
             {
@@ -329,7 +343,7 @@ namespace Word2VecSharp
         /// 统计词频
         /// </summary>
         /// <param name="file"></param>
-        private void readVocab(string file)
+        private void ReadVocab(string file)
         {
             Dictionary<string, int> wc = new Dictionary<string, int>();
             StreamReader br = new StreamReader(file);
@@ -346,9 +360,11 @@ namespace Word2VecSharp
                         wc.Add(s, 1);
                 }
             }
+            if (wc.ContainsKey(""))
+                wc.Remove("");
             foreach (KeyValuePair<string, int> item in wc)
             {
-                wordMap.Add(item.Key, new WordNeuron(item.Key,(double)item.Value / wc.Count, layerSize));
+                wordMap.Add(item.Key, new WordNeuron(item.Key, (double)item.Value / wc.Count, layerSize));
             }
         }
 
@@ -376,32 +392,32 @@ namespace Word2VecSharp
                             wc.Add(s, 1);
                     }
                 }
-            
-            foreach (KeyValuePair<string, int> item in wc)
-            {
-                double tarFreq = (double)item.Value / wc.Count;
-                if (wordMap[item.Key] != null)
+
+                foreach (KeyValuePair<string, int> item in wc)
                 {
-                    double srcFreq = wordMap[item.Key].freq;
-                    if (srcFreq >= tarFreq)
+                    double tarFreq = (double)item.Value / wc.Count;
+                    if (wordMap[item.Key] != null)
                     {
-                        continue;
+                        double srcFreq = wordMap[item.Key].freq;
+                        if (srcFreq >= tarFreq)
+                        {
+                            continue;
+                        }
+                        else
+                        {
+                            Neuron wordNeuron = wordMap[item.Key];
+                            wordNeuron.category = category;
+                            wordNeuron.freq = tarFreq;
+                        }
                     }
                     else
                     {
-                        Neuron wordNeuron = wordMap[item.Key];
-                        wordNeuron.category = category;
-                        wordNeuron.freq = tarFreq;
+                        wordMap.Add(item.Key, new WordNeuron(item.Key,
+                            tarFreq, category, layerSize));
                     }
-                }
-                else
-                {
-                    wordMap.Add(item.Key, new WordNeuron(item.Key,
-                        tarFreq, category, layerSize));
                 }
             }
         }
-    }
 
         /// <summary>
         /// Precompute the exp() table f(x) = x / (x + 1)
@@ -422,22 +438,27 @@ namespace Word2VecSharp
         public void LearnFile(string file)
         {
             Stopwatch w = Stopwatch.StartNew();
-            readVocab(file);
+            ReadVocab(file);
             Console.WriteLine("读取耗时：" + w.ElapsedMilliseconds);
+
             w = Stopwatch.StartNew();
             new Haffman(layerSize).Make(wordMap.Values);
             Console.WriteLine("make 耗时：" + w.ElapsedMilliseconds);
 
             w = Stopwatch.StartNew();
             // 查找每个神经元
-            foreach (Neuron neuron in wordMap.Values)
+            foreach (Neuron item in wordMap.Values)
             {
-                ((WordNeuron)neuron).MakeNeurons();
+                if (((WordNeuron)item).name == "群众/n")
+                {
+
+                }
+                ((WordNeuron)item).MakeNeurons();
             }
             Console.WriteLine("查找每个神经元耗时:" + w.ElapsedMilliseconds);
 
-            w = Stopwatch.StartNew(); 
-            trainModel(file);
+            w = Stopwatch.StartNew();
+            TrainModel(file);
             Console.WriteLine("训练耗时:" + w.ElapsedMilliseconds);
         }
 
@@ -455,7 +476,7 @@ namespace Word2VecSharp
             {
                 ((WordNeuron)neuron).MakeNeurons();
             }
-            trainModel(summaryFile);
+            TrainModel(summaryFile);
         }
 
         /// <summary>
@@ -476,13 +497,18 @@ namespace Word2VecSharp
                     syn0 = ((WordNeuron)item.Value).syn0;
                     foreach (double d in syn0)
                     {
-                        writer.Write((float)d);
+                        //writer.Write((float)d);
+                        writer.Write(d);
                     }
                 }
                 writer.Close();
                 fs.Close();
             }
         }
+
+        #endregion
+
+
 
     }
 }

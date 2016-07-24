@@ -1,4 +1,5 @@
-﻿using System;
+﻿using java.util;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Word2VecSharp
 {
-    public class Word2Vec
+    public class Word2Vec : IWord2Vec
     {
         #region 字段
 
@@ -15,10 +16,10 @@ namespace Word2VecSharp
         /// <summary>
         /// 词向量
         /// </summary>
-        public Dictionary<string, float[]> wordMap = new Dictionary<string, float[]>();
+        public Dictionary<string, double[]> wordMap = new Dictionary<string, double[]>();
         public int words;
         public int size;
-        public int topN = 10;
+        public int topN = 40;
 
         #endregion
 
@@ -30,40 +31,40 @@ namespace Word2VecSharp
         /// <param name="path">模型的路径</param>
         public void LoadGoogleModel(string path)
         {
-            using (FileStream fs = new FileStream(path, FileMode.Open))
-            {
-                BinaryReader reader = new BinaryReader(fs);
-                double len = 0;
-                float vector = 0;
-                //读取词数及大小
-                words = int.Parse(readString(reader));
-                size = int.Parse(readString(reader));
-                string word;
-                float[] vectors = null;
-                for (int i = 0; i < words; i++)
-                {
-                    word = readString(reader);
-                    vectors = new float[size];
-                    len = 0;
-                    for (int j = 0; j < size; j++)
-                    {
-                        vector = reader.ReadSingle();
-                        len += vector * vector;
-                        vectors[j] = vector;
-                    }
-                    len = Math.Sqrt(len);
+            //using (FileStream fs = new FileStream(path, FileMode.Open))
+            //{
+            //    BinaryReader reader = new BinaryReader(fs);
+            //    double len = 0;
+            //    float vector = 0;
+            //    //读取词数及大小
+            //    words = int.Parse(readString(reader));
+            //    size = int.Parse(readString(reader));
+            //    string word;
+            //    float[] vectors = null;
+            //    for (int i = 0; i < words; i++)
+            //    {
+            //        word = readString(reader);
+            //        vectors = new float[size];
+            //        len = 0;
+            //        for (int j = 0; j < size; j++)
+            //        {
+            //            vector = reader.ReadSingle();
+            //            len += vector * vector;
+            //            vectors[j] = vector;
+            //        }
+            //        len = Math.Sqrt(len);
 
-                    for (int j = 0; j < size; j++)
-                    {
-                        vectors[j] = (float)(vectors[j] / len);
-                    }
+            //        for (int j = 0; j < size; j++)
+            //        {
+            //            vectors[j] = (float)(vectors[j] / len);
+            //        }
 
-                    wordMap.Add(word, vectors);
-                    reader.Read();
-                }
-                reader.Close();
-                fs.Close();
-            }
+            //        wordMap.Add(word, vectors);
+            //        reader.Read();
+            //    }
+            //    reader.Close();
+            //    fs.Close();
+            //}
                 
         }
 
@@ -73,29 +74,58 @@ namespace Word2VecSharp
         /// <param name="path">模型的路径</param>
         public void LoadModel(string path)
         {
+            //using (FileStream fs = new FileStream(path, FileMode.Open))
+            //{
+            //    BinaryReader reader = new BinaryReader(fs, Encoding.UTF8);
+            //    words = reader.ReadInt32();
+            //    size = reader.ReadInt32();
+            //    float vector = 0;
+
+            //    string key = null;
+            //    float[] value = null;
+            //    for (int i = 0; i < words; i++)
+            //    {
+            //        double len = 0;
+            //        key = reader.ReadString();
+            //        value = new float[size];
+            //        for (int j = 0; j < size; j++)
+            //        {
+            //            vector = reader.ReadSingle();
+            //            len += vector * vector;
+            //            value[j] = vector;
+            //        }
+            //        len = Math.Sqrt(len);
+            //        for (int j = 0; j < size; j++)
+            //        {
+            //            value[j] = (float)(value[j] / len);
+            //        }
+            //        wordMap.Add(key, value);
+            //    }
+            //    reader.Close();
+            //    fs.Close();
+            //}
+
             using (FileStream fs = new FileStream(path, FileMode.Open))
             {
                 BinaryReader reader = new BinaryReader(fs, Encoding.UTF8);
                 words = reader.ReadInt32();
                 size = reader.ReadInt32();
-                float vector = 0;
+                double vector = 0;
 
                 string key = null;
-                float[] value = null;
+                double[] value = null;
                 for (int i = 0; i < words; i++)
                 {
                     double len = 0;
                     key = reader.ReadString();
-                    value = new float[size];
+                    value = new double[size];
                     for (int j = 0; j < size; j++)
                     {
-                        vector = reader.ReadSingle();
+                        vector = reader.ReadDouble();
                         len += vector * vector;
                         value[j] = vector;
                     }
-
                     len = Math.Sqrt(len);
-
                     for (int j = 0; j < size; j++)
                     {
                         value[j] = (float)(value[j] / len);
@@ -107,6 +137,36 @@ namespace Word2VecSharp
             }
         }
 
+        public void LoadModelFromTxt(string path)
+        {
+            StreamReader reader = new StreamReader(path);
+            words = int.Parse(reader.ReadLine());
+            size = int.Parse(reader.ReadLine());
+            float vector = 0;
+            string key = null;
+            double[] value = null;
+            for (int i = 0; i < words; i++)
+            {
+                double len = 0;
+                key = reader.ReadLine();
+                value = new double[size];
+                string[] s = reader.ReadLine().Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int j = 0; j < size; j++)
+                {
+                    vector = float.Parse(s[j]);
+                    len += vector * vector;
+                    value[j] = vector;
+                }
+                len = Math.Sqrt(len);
+                for (int j = 0; j < size; j++)
+                {
+                    value[j] = (float)(value[j] / len);
+                }
+                wordMap.Add(key, value);
+            }
+            reader.Close();
+        }
+
         /// <summary>
         /// 近义词
         /// </summary>
@@ -116,98 +176,93 @@ namespace Word2VecSharp
         /// <returns></returns>
         public HashSet<WordEntry> Analogy(string w0, string w1, string w2)
         {
-            float[] wv0 = wordMap[w0];
-            float[] wv1 = wordMap[w1];
-            float[] wv2 = wordMap[w2];
+            double[] wv0 = wordMap[w0];
+            double[] wv1 = wordMap[w1];
+            double[] wv2 = wordMap[w2];
 
             if (wv1 == null || wv2 == null || wv0 == null)
                 return null;
 
-            float[] wordVector = new float[size];
+            double[] wordVector = new double[size];
             for (int i = 0; i < size; i++)
             {
                 wordVector[i] = wv1[i] - wv0[i] + wv2[i];
             }
-            float[] tempVector;
+            double[] tempVector;
             string name;
             List<WordEntry> wordEntrys = new List<WordEntry>(topN);
-            foreach (KeyValuePair<string, float[]> entry in wordMap)
+            foreach (KeyValuePair<string, double[]> entry in wordMap)
             {
                 name = entry.Key;
                 if (name.Equals(w0) || name.Equals(w1) || name.Equals(w2))
                     continue;
 
-                float dist = 0;
+                double dist = 0;
                 tempVector = entry.Value;
                 for (int i = 0; i < wordVector.Length; i++)
                 {
                     dist += wordVector[i] * tempVector[i];
                 }
-                insertTopN(name, dist, wordEntrys);
+                InsertTopN(name, dist, wordEntrys);
             }
             return new HashSet<WordEntry>(wordEntrys);
         }
 
-        public SortedSet<WordEntry> Distance(string word)
+        public TreeSet Distance(string word)
         {
-            float[] center = wordMap[word];
-            if (center == null)
+            double[] center = null;
+            if (wordMap.TryGetValue(word, out center) == false)
                 return null;
-
             int resultSize = wordMap.Count < topN ? wordMap.Count : topN;
-            SortedSet<WordEntry> result = new SortedSet<WordEntry>();
-
-            double min = float.MinValue;
-            foreach (KeyValuePair<string, float[]> entry in wordMap)
+            TreeSet result = new TreeSet();
+            double min = double.MinValue;
+            foreach (KeyValuePair<string, double[]> entry in wordMap)
             {
-                float[] vector = entry.Value;
-                float dist = 0;
-                for (int i = 0; i < vector.Length; i++)
+                double[] vector = entry.Value;
+                double dist = 0;
+                for (int i = 0; i < vector.Length; i+=4)
                 {
                     dist += center[i] * vector[i];
+                    dist += center[i + 1] * vector[i + 1];
+                    dist += center[i + 2] * vector[i + 2];
+                    dist += center[i + 3] * vector[i + 3];
                 }
 
                 if (dist > min)
                 {
                     result.Add(new WordEntry(entry.Key, dist));
-                    if (resultSize < result.Count)
+                    if (resultSize < result.size())
                     {
-                        //result.pollLast();
-
-                        result.ElementAt(result.Count - 1).isUsed = true;
-                        result.RemoveWhere(item => item.isUsed == true);
+                        result.pollLast();
                     }
-                    min = result.Last().score;
+                    min = ((WordEntry)result.last()).score;
                 }
             }
-            //result.pollFirst();
-            //result.ElementAt(0).isUsed = true;
-            //result.RemoveWhere(item => item.isUsed == true);
-
+            result.pollFirst();
             return result;
         }
 
-        public HashSet<WordEntry> Distance(List<string> words)
+        public TreeSet Distance(List<string> words)
         {
-            float[] center = null;
-            foreach (String word in words)
+            double[] center = null;
+            foreach (string word in words)
             {
                 center = Sum(center, wordMap[word]);
             }
 
             if (center == null)
             {
-                return new HashSet<WordEntry>();
+                return new TreeSet();
             }
 
             int resultSize = wordMap.Count < topN ? wordMap.Count : topN;
-            HashSet<WordEntry> result = new HashSet<WordEntry>();
+            TreeSet result = new TreeSet();
 
             double min = float.MinValue;
-            foreach (KeyValuePair<String, float[]> entry in wordMap)
+            foreach (KeyValuePair<string, double[]> entry in wordMap)
             {
-                float[] vector = entry.Value;
-                float dist = 0;
+                double[] vector = entry.Value;
+                double dist = 0;
                 for (int i = 0; i < vector.Length; i++)
                 {
                     dist += center[i] * vector[i];
@@ -215,16 +270,15 @@ namespace Word2VecSharp
 
                 if (dist > min)
                 {
-                    //result.AddAfter(new WordEntry(entry.Key, dist));
-                    //if (resultSize < result.Count)
-                    //{
-                    //    result.pollLast();
-                    //}
-                    //min = result.last().score;
+                    result.add(new WordEntry(entry.Key, dist));
+                    if (resultSize < result.size())
+                    {
+                        result.pollLast();
+                    }
+                    min = ((WordEntry)result.last()).score;
                 }
             }
-            //result.pollFirst();
-
+            result.pollFirst();
             return result;
         }
 
@@ -232,14 +286,14 @@ namespace Word2VecSharp
 
         #region 私有
 
-        private void insertTopN(string name, float score, List<WordEntry> wordsEntrys)
+        private void InsertTopN(string name, double score, List<WordEntry> wordsEntrys)
         {
             if (wordsEntrys.Count < topN)
             {
                 wordsEntrys.Add(new WordEntry(name, score));
                 return;
             }
-            float min = float.MaxValue;
+            double min = double.MaxValue;
             int minOffe = 0;
             for (int i = 0; i < topN; i++)
             {
@@ -250,15 +304,13 @@ namespace Word2VecSharp
                     minOffe = i;
                 }
             }
-
             if (score > min)
             {
                 wordsEntrys[minOffe] = new WordEntry(name, score);
             }
-
         }
 
-        private float[] Sum(float[] center, float[] fs)
+        private double[] Sum(double[] center, double[] fs)
         {
             if (center == null && fs == null)
             {
@@ -283,33 +335,9 @@ namespace Word2VecSharp
             return center;
         }
 
-        /// <summary>
-        /// 读取一个字符串
-        /// </summary>
-        /// <param name="dis"></param>
-        /// <returns></returns>
-        private static string readString(BinaryReader dis)
+        public TreeSet Distance(string word, int count = 20)
         {
-            byte[] bytes = new byte[MAX_SIZE];
-            int b = dis.ReadByte();
-            int i = -1;
-            StringBuilder sb = new StringBuilder();
-            while (b != 32 && b != 10)
-            {
-                i++;
-                bytes[i] = (byte)b;
-                b = dis.ReadByte();
-                if (i == 49)
-                {
-                    sb.Append(Encoding.UTF8.GetString(bytes));
-                    i = -1;
-                    bytes = new byte[MAX_SIZE];
-                }
-            }
-            //sb.Append(new String(bytes, 0, i + 1));
-            sb.Append(Encoding.UTF8.GetString(bytes, 0, i + 1));
-            return sb.ToString();
-
+            throw new NotImplementedException();
         }
 
         #endregion

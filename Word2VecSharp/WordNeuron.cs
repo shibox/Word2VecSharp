@@ -49,15 +49,8 @@ namespace Word2VecSharp
         }
 
         public WordNeuron(string name, double freq, int layerSize)
+            :this(name,freq,-1,layerSize)
         {
-            this.name = name;
-            this.freq = freq;
-            this.syn0 = new double[layerSize];
-            Random random = new Random();
-            for (int i = 0; i < syn0.Length; i++)
-            {
-                syn0[i] = (random.NextDouble() - 0.5) / layerSize;
-            }
         }
 
         /// <summary>
