@@ -149,15 +149,18 @@ namespace Word2VecSharp
                     dist += center[i + 2] * scoreList[of + i + 2];
                     dist += center[i + 3] * scoreList[of + i + 3];
                 }
-                if (dist > min)
-                {
-                    result.Add(new WordEntry(wordList[n], dist));
-                    if (resultSize < result.size())
-                    {
-                        result.pollLast();
-                    }
-                    min = (float)((WordEntry)result.last()).score;
-                }
+
+                //dist = Utils.MultiplySimd(center,scoreList,of);
+
+                //if (dist > min)
+                //{
+                //    result.Add(new WordEntry(wordList[n], dist));
+                //    if (resultSize < result.size())
+                //    {
+                //        result.pollLast();
+                //    }
+                //    min = (float)((WordEntry)result.last()).score;
+                //}
             }
             result.pollFirst();
             return result;

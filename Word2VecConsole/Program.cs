@@ -20,7 +20,7 @@ namespace Word2VecConsole
 
         static void Main(string[] args)
         {
-            string output = "D:\\weiwei\\OSS\\vector.mod";
+            string output = "vector.mod";
             if (File.Exists(output) == false)
             {
                 //进行分词训练
