@@ -142,15 +142,15 @@ namespace Word2VecSharp
                 //乘法运算这里将使用simd的向量运算，提高性能
                 //Vector4 v = new Vector4();
                 //System.Numerics.Vector v = new System.Numerics.Vector();
-                for (int i = 0; i < size; i += 4)
-                {
-                    dist += center[i] * scoreList[of + i];
-                    dist += center[i + 1] * scoreList[of + i + 1];
-                    dist += center[i + 2] * scoreList[of + i + 2];
-                    dist += center[i + 3] * scoreList[of + i + 3];
-                }
+                //for (int i = 0; i < size; i += 4)
+                //{
+                //    dist += center[i] * scoreList[of + i];
+                //    dist += center[i + 1] * scoreList[of + i + 1];
+                //    dist += center[i + 2] * scoreList[of + i + 2];
+                //    dist += center[i + 3] * scoreList[of + i + 3];
+                //}
 
-                //dist = Utils.MultiplySimd(center,scoreList,of);
+                dist = Utils.MultiplySimd(center, scoreList, of);
 
                 //if (dist > min)
                 //{

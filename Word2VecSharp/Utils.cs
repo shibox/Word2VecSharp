@@ -35,10 +35,12 @@ namespace Word2VecSharp
             Vector<float> swapResult = new Vector<float>();
             for (int i = 0; i < a.Length; i += simdLength)
             {
-                Vector<float> left = new Vector<float>(a, i);
-                Vector<float> right = new Vector<float>(b, i + bof);
-                Vector<float> swap = Vector.Multiply(left, right);
-                swapResult = Vector.Add(swap, swapResult);
+                //Vector<float> left = new Vector<float>(a, i);
+                //Vector<float> right = new Vector<float>(b, i + bof);
+                //Vector<float> swap = Vector.Multiply(left, right);
+                //swapResult = Vector.Add(swap, swapResult);
+
+                swapResult += new Vector<float>(a, i) * new Vector<float>(b, i + bof);
             }
             for (int i = 0; i < simdLength; ++i)
             {
