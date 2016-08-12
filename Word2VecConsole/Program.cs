@@ -15,7 +15,7 @@ namespace Word2VecConsole
     {
         //private static string file = "D:\\weiwei\\OSS\\result.txt";
         //private static string file = "D:\\weiwei\\Java\\CorpuAll.txt";
-        private static string file = "D:\\weiwei\\Java\\corpus_big.txt";
+        private static string file = "corpus.txt";
         
 
         static void Main(string[] args)

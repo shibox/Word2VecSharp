@@ -15,7 +15,7 @@ namespace Word2VecSharp
         public const int EXP_TABLE_SIZE = 1000;
         private Dictionary<String, WordNeuron> wordMap = new Dictionary<string, WordNeuron>();
         private double[] expTable = new double[EXP_TABLE_SIZE];
-        //private double[] neu1e = null;
+        private double[] neu1e = null;
         //private int trainWordsCount = 0;
         //private int MAX_EXP = 6;
         private double trainWordsCount = 0;
@@ -37,6 +37,14 @@ namespace Word2VecSharp
         public double alpha = 0.025;
         public double startingAlpha = 0.025;
         public bool isCbow = false;
+        double[] buffer = null;
+        double[] swap = null;
+        int layerBlockCount = 100;
+        int curLayerBlockCount = 0;
+
+        public long newArrayCount = 0;
+        public long cCount = 0;
+        public long jCount = 0;
 
         #endregion
 
@@ -45,7 +53,10 @@ namespace Word2VecSharp
         public Learn()
         {
             CreateExpTable();
-            //neu1e = new double[layerSize];// 误差项
+            neu1e = new double[layerSize];// 误差项
+
+            buffer = new double[layerSize * layerBlockCount];
+            swap = new double[layerSize];
         }
 
         public Learn(bool isCbow, int layerSize, int window, double alpha, double sample)
@@ -57,11 +68,20 @@ namespace Word2VecSharp
             this.alpha = alpha;
             this.sample = sample;
             //this.neu1e = new double[layerSize];// 误差项
+
+            buffer = new double[layerSize * layerBlockCount];
+            swap = new double[layerSize];
         }
 
         #endregion
 
         #region 训练
+
+        private void Reset()
+        {
+            for (int i = 0; i < layerBlockCount; i++)
+                Buffer.BlockCopy(swap, 0, buffer, i * layerSize * 8, layerSize * 8);
+        }
 
         /// <summary>
         /// trainModel
@@ -137,13 +157,11 @@ namespace Word2VecSharp
             {
                 if (wordCount - lastWordCount > 10000)
                 {
-                    Console.WriteLine(
-                        "alpha:" + alpha + "\tProgress: "
-                        + (int)(wordCountActual / (double)(trainWordsCount + 1) * 100)
-                        + "%");
+                    Console.WriteLine(string.Format("alpha:{0}%", (wordCountActual / (trainWordsCount + 1) * 100).ToString("f2")));
+                    Console.WriteLine("new:" + newArrayCount + ",cCount:" + cCount + ",jCount:" + jCount);
                     wordCountActual += wordCount - lastWordCount;
                     lastWordCount = wordCount;
-                    alpha = startingAlpha * (1 - wordCountActual / (double)(trainWordsCount + 1));
+                    alpha = startingAlpha * (1 - wordCountActual / (trainWordsCount + 1));
                     if (alpha < startingAlpha * 0.0001)
                     {
                         alpha = startingAlpha * 0.0001;
@@ -184,7 +202,8 @@ namespace Word2VecSharp
                     }
                     else
                     {
-                        SkipGram(index, sentence, (int)rd % window);
+                        SkipGramSimd(index, sentence, (int)rd % window);
+                        //SkipGramFast(index, sentence, (int)rd % window);
                     }
                 }
 
@@ -192,14 +211,9 @@ namespace Word2VecSharp
             Console.WriteLine("Vocab size: " + wordMap.Count);
             Console.WriteLine("Words in train file: " + trainWordsCount);
             Console.WriteLine("sucess train over!");
+            Console.WriteLine("new:" + newArrayCount + ",cCount:" + cCount+",jCount:" + jCount);
         }
 
-        /// <summary>
-        /// 模型训练
-        /// </summary>
-        /// <param name="index"></param>
-        /// <param name="sentence"></param>
-        /// <param name="b"></param>
         private void SkipGram(int index, List<WordNeuron> sentence, int b)
         {
             WordNeuron word = sentence[index];
@@ -257,6 +271,159 @@ namespace Word2VecSharp
                 }
             }
 
+        }
+
+        /// <summary>
+        /// 模型训练
+        /// </summary>
+        /// <param name="index"></param>
+        /// <param name="sentence"></param>
+        /// <param name="b"></param>
+        private void SkipGramSimd(int index, List<WordNeuron> sentence, int b)
+        {
+            WordNeuron word = sentence[index];
+            int a, c = 0;
+            for (a = b; a < window * 2 + 1 - b; a++)
+            {
+                if (a == window)
+                    continue;
+                c = index - window + a;
+                if (c < 0 || c >= sentence.Count)
+                    continue;
+
+                newArrayCount++;
+
+                Buffer.BlockCopy(swap, 0, neu1e, 0, layerSize * 8);
+                // HIERARCHICAL SOFTMAX
+                List<Neuron> neurons = word.neurons;
+                WordNeuron we = sentence[c];
+                for (int i = 0; i < neurons.Count; i++)
+                {
+                    HiddenNeuron ou = (HiddenNeuron)neurons[i];
+                    double f = 0;
+                    // Propagate hidden -> output
+                    f = Utils.MultiplySimd(we.syn0, ou.syn1);
+                    cCount++;
+                    //continue;
+                    if (f <= -MAX_EXP || f >= MAX_EXP)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        //f = (f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2);
+                        f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / (double)2);
+                        f = expTable[(int)f];
+                    }
+                    // 'g' is the gradient multiplied by the learning rate
+                    //double g = (1 - word.codeArr[i] - f) * alpha;
+                    double g = ((double)1 - (double)word.codeArr[i] - f) * alpha;
+                    // Propagate errors output -> hidden
+                    //for (c = 0; c < layerSize; c++)
+                    //{
+                    //    neu1e[c] += g * ou.syn1[c];
+                    //}
+                    //// Learn weights hidden -> output
+                    //for (c = 0; c < layerSize; c++)
+                    //{
+                    //    ou.syn1[c] += g * we.syn0[c];
+                    //}
+
+                    for (c = 0; c < layerSize; c+=4)
+                    {
+                        neu1e[c] += g * ou.syn1[c];
+                        ou.syn1[c] += g * we.syn0[c];
+
+                        neu1e[c+1] += g * ou.syn1[c + 1];
+                        ou.syn1[c + 1] += g * we.syn0[c + 1];
+
+                        neu1e[c + 2] += g * ou.syn1[c + 2];
+                        ou.syn1[c + 2] += g * we.syn0[c + 2];
+
+                        neu1e[c + 3] += g * ou.syn1[c + 3];
+                        ou.syn1[c + 3] += g * we.syn0[c + 3];
+                    }
+                    jCount++;
+                }
+
+                //Learn weights input->hidden
+                double[] syn0 = we.syn0;
+                for (int j = 0; j < layerSize; j += 4)
+                {
+                    syn0[j] += neu1e[j];
+                    syn0[j + 1] += neu1e[j + 1];
+                    syn0[j + 2] += neu1e[j + 2];
+                    syn0[j + 3] += neu1e[j + 3];
+                }
+            }
+
+        }
+
+        private void SkipGramFast(int index, List<WordNeuron> sentence, int b)
+        {
+            WordNeuron word = sentence[index];
+            int a, c = 0;
+            for (a = b; a < window * 2 + 1 - b; a++)
+            {
+                if (a == window)
+                    continue;
+                c = index - window + a;
+                if (c < 0 || c >= sentence.Count)
+                    continue;
+
+                int offset = curLayerBlockCount * layerSize;
+                //double[] neu1e = new double[layerSize];// 误差项
+                // HIERARCHICAL SOFTMAX
+                List<Neuron> neurons = word.neurons;
+                WordNeuron we = sentence[c];
+                for (int i = 0; i < neurons.Count; i++)
+                {
+                    HiddenNeuron ou = (HiddenNeuron)neurons[i];
+                    double f = 0;
+                    // Propagate hidden -> output
+                    for (int j = 0; j < layerSize; j++)
+                    {
+                        f += we.syn0[j] * ou.syn1[j];
+                    }
+                    if (f <= -MAX_EXP || f >= MAX_EXP)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        //f = (f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2);
+                        f = (f + MAX_EXP) * ((double)EXP_TABLE_SIZE / MAX_EXP / (double)2);
+                        f = expTable[(int)f];
+                    }
+                    // 'g' is the gradient multiplied by the learning rate
+                    //double g = (1 - word.codeArr[i] - f) * alpha;
+                    double g = ((double)1 - (double)word.codeArr[i] - f) * alpha;
+                    // Propagate errors output -> hidden
+                    for (c = 0; c < layerSize; c++)
+                    {
+                        buffer[c+ offset] += g * ou.syn1[c];
+                    }
+                    // Learn weights hidden -> output
+                    for (c = 0; c < layerSize; c++)
+                    {
+                        ou.syn1[c] += g * we.syn0[c];
+                    }
+                }
+
+                // Learn weights input -> hidden
+                for (int j = 0; j < layerSize; j++)
+                {
+                    we.syn0[j] += buffer[j+ offset];
+                }
+
+                curLayerBlockCount++;
+                if (curLayerBlockCount == layerBlockCount)
+                {
+                    Reset();
+                    curLayerBlockCount = 0;
+                }
+            }
+            
         }
 
         /// <summary>
@@ -449,10 +616,6 @@ namespace Word2VecSharp
             // 查找每个神经元
             foreach (Neuron item in wordMap.Values)
             {
-                if (((WordNeuron)item).name == "群众/n")
-                {
-
-                }
                 ((WordNeuron)item).MakeNeurons();
             }
             Console.WriteLine("查找每个神经元耗时:" + w.ElapsedMilliseconds);
